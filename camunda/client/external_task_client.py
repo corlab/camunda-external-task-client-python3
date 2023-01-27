@@ -26,6 +26,7 @@ class ExternalTaskClient:
     }
 
     def __init__(self, worker_id, engine_base_url=ENGINE_LOCAL_BASE_URL, config=None):
+        self.token = None if config is None else self.get_authorization_token(engine_base_url)
         config = config if config is not None else {}
         self.worker_id = worker_id
         self.external_task_base_url = engine_base_url + "/external-task"
@@ -34,6 +35,17 @@ class ExternalTaskClient:
         self.is_debug = config.get('isDebug', False)
         self.http_timeout_seconds = self.config.get('httpTimeoutMillis') / 1000
         self._log_with_context(f"Created External Task client with config: {obfuscate_password(self.config)}")
+
+    def get_authorization_token(self, engine_base_url):
+        url = f"{engine_base_url}/identity/token"
+        if not self.config.get("auth_credentials") or not isinstance(self.config.get("auth_credentials"), dict):
+            return {}
+        credentials = AuthBasic(**self.config.get("auth_credentials").copy())
+
+        response = requests.post(url, json=credentials)
+        raise_exception_if_not_ok(response)
+        resp_json = response.json()
+        return resp_json["token"]
 
     def get_fetch_and_lock_url(self):
         return f"{self.external_task_base_url}/fetchAndLock"
@@ -143,6 +155,8 @@ class ExternalTaskClient:
         }
         if self.auth_basic:
             headers.update(self.auth_basic)
+        elif self.token is not None:
+            headers.update({"Authorization": "Bearer " + self.token})
         return headers
 
     def _log_with_context(self, msg, log_level='info', **kwargs):

@@ -17,9 +17,21 @@ ENGINE_LOCAL_BASE_URL = "http://localhost:8080/engine-rest"
 class EngineClient:
 
     def __init__(self, engine_base_url=ENGINE_LOCAL_BASE_URL, config=None):
+        self.token = None if config is None else self.get_authorization_token()
         config = config if config is not None else {}
         self.config = config.copy()
         self.engine_base_url = engine_base_url
+
+    def get_authorization_token(self):
+        url = f"{self.engine_base_url}/identity/token"
+        if not self.config.get("auth_credentials") or not isinstance(self.config.get("auth_credentials"), dict):
+            return {}
+        credentials = AuthBasic(**self.config.get("auth_credentials").copy())
+
+        response = requests.post(url, json=credentials)
+        raise_exception_if_not_ok(response)
+        resp_json = response.json()
+        return resp_json["token"]
 
     def get_start_process_instance_url(self, process_key, tenant_id=None):
         if tenant_id:
@@ -79,6 +91,8 @@ class EngineClient:
         }
         if self.auth_basic:
             headers.update(self.auth_basic)
+        elif self.token is not None:
+            headers.update({"Authorization": "Bearer " + self.token})
         return headers
 
     def correlate_message(self, message_name, process_instance_id=None, tenant_id=None, business_key=None,
