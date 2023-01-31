@@ -26,7 +26,7 @@ class ExternalTaskClient:
     }
 
     def __init__(self, worker_id, engine_base_url=ENGINE_LOCAL_BASE_URL, config=None):
-        self.token = None if config is None else self.get_authorization_token(engine_base_url)
+        self.token = None if config is None else self.get_authorization_token(engine_base_url, config)
         config = config if config is not None else {}
         self.worker_id = worker_id
         self.external_task_base_url = engine_base_url + "/external-task"
@@ -36,11 +36,11 @@ class ExternalTaskClient:
         self.http_timeout_seconds = self.config.get('httpTimeoutMillis') / 1000
         self._log_with_context(f"Created External Task client with config: {obfuscate_password(self.config)}")
 
-    def get_authorization_token(self, engine_base_url):
+    def get_authorization_token(self, engine_base_url, config):
         url = f"{engine_base_url}/identity/token"
-        if not self.config.get("auth_credentials") or not isinstance(self.config.get("auth_credentials"), dict):
+        if not config.get("auth_credentials") or not isinstance(config.get("auth_credentials"), dict):
             return {}
-        credentials = AuthBasic(**self.config.get("auth_credentials").copy())
+        credentials = config.get("auth_credentials").copy()
 
         response = requests.post(url, json=credentials)
         raise_exception_if_not_ok(response)

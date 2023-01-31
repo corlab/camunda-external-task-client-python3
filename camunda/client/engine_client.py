@@ -17,16 +17,16 @@ ENGINE_LOCAL_BASE_URL = "http://localhost:8080/engine-rest"
 class EngineClient:
 
     def __init__(self, engine_base_url=ENGINE_LOCAL_BASE_URL, config=None):
-        self.token = None if config is None else self.get_authorization_token()
+        self.token = None if config is None else self.get_authorization_token(config)
         config = config if config is not None else {}
         self.config = config.copy()
         self.engine_base_url = engine_base_url
 
-    def get_authorization_token(self):
+    def get_authorization_token(self, config):
         url = f"{self.engine_base_url}/identity/token"
-        if not self.config.get("auth_credentials") or not isinstance(self.config.get("auth_credentials"), dict):
+        if not config.get("auth_credentials") or not isinstance(config.get("auth_credentials"), dict):
             return {}
-        credentials = AuthBasic(**self.config.get("auth_credentials").copy())
+        credentials = config.get("auth_credentials").copy()
 
         response = requests.post(url, json=credentials)
         raise_exception_if_not_ok(response)
