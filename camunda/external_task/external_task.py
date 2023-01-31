@@ -63,6 +63,9 @@ class ExternalTask:
         )
         return self._task_result
 
+    def check_retries(self):
+        return self._context.get("retries", None)
+
     def _calculate_retries(self, max_retries):
         retries = self._context.get("retries", None)
         retries = int(retries - 1) if retries and retries >= 1 else max_retries
